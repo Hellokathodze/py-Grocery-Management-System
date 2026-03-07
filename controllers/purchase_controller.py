@@ -5,25 +5,29 @@ class PurchaseController:
 
     def record_purchase(self):
 
-        product_id = input("Product ID: ")
-        product_name = input("Product Name: ")
-        quantity = int(input("Quantity: "))
-        price = float(input("Purchase price: "))
+        product_id = input("Enter Product ID: ")
+        quantity = int(input("Enter Quantity: "))
+        cost_price = float(input("Enter Cost Price: "))
 
-        purchase = {
-            "product_id": product_id,
-            "product_name": product_name,
-            "quantity": quantity,
-            "price": price
-        }
-
-        self.purchase_service.record_purchase(purchase)
-
-        print("Purchase recorded.")
+        self.purchase_service.record_purchase(product_id, quantity, cost_price)
 
     def view_purchases(self):
 
-        purchases = self.purchase_service.get_purchases()
+        purchases = self.purchase_service.get_all_purchases()
+
+        if not purchases:
+            print("No purchases found.")
+            return
+
+        print("\n===== PURCHASE HISTORY =====")
 
         for p in purchases:
-            print(p)
+
+            print(f"""
+Product ID    : {p.get('product_id')}
+Product Name  : {p.get('product_name')}
+Quantity      : {p.get('quantity')}
+Cost Price    : {p.get('cost_price')}
+Total Cost    : {p.get('total_cost')}
+Purchase Date : {p.get('purchase_date')}
+""")

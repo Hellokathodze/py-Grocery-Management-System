@@ -39,118 +39,167 @@ def main():
     purchase_controller = PurchaseController(purchase_service)
     auth_controller = AuthController(auth_service)
 
+    export_utils = ExportUtils()
+    backup_utils = BackupUtils()
+
     user = None
 
     while user is None:
         user = auth_controller.login()
 
-    role = user["role"]
-
-    print(f"\nWelcome {user['username']} ({role})")
+    print(f"\nWelcome {user['username']} ({user['role']})")
 
     while True:
 
-        print("\n===== GROCERY MANAGEMENT SYSTEM =====")
+        # ================= ADMIN MENU =================
 
-        print("1 Add Product")
-        print("2 View Products")
-        print("3 Update Product")
-        print("4 Delete Product")
+        if user["role"] == "admin":
 
-        print("5 Record Sale")
-        print("6 View Sales")
+            print("\n===== GROCERY MANAGEMENT SYSTEM =====")
 
-        print("7 Record Purchase")
-        print("8 View Purchases")
+            print("1 Add Product")
+            print("2 View Products")
+            print("3 Update Product")
+            print("4 Delete Product")
+            print("5 Record Sale")
+            print("6 View Sales")
+            print("7 Record Purchase")
+            print("8 View Purchases")
+            print("9 View Stock Movements")
+            print("10 Low Stock Alerts")
+            print("11 Search Product")
+            print("12 Expiry Alerts")
+            print("13 Sales Analytics")
+            print("14 Inventory Analytics")
+            print("15 Reorder Suggestions")
+            print("16 Category Analytics")
+            print("17 Export Sales Report")
+            print("18 Export Inventory Report")
+            print("19 Backup Database")
+            print("20 Restore Database")
+            print("0 Exit")
 
-        print("9 View Stock Movements")
-        print("10 Low Stock Alerts")
-        print("11 Search Product")
-        print("12 Expiry Alerts")
+            choice = input("Enter choice: ")
 
-        print("13 Sales Analytics")
-        print("14 Inventory Analytics")
-        print("15 Reorder Suggestions")
-        print("16 Category Analytics")
+            if choice == "1":
+                inventory_controller.add_product()
 
-        print("17 Export Sales Report")
-        print("18 Export Inventory Report")
+            elif choice == "2":
+                inventory_controller.view_products()
 
-        print("19 Backup Database")
-        print("20 Restore Database")
+            elif choice == "3":
+                inventory_controller.update_product()
 
-        print("0 Exit")
+            elif choice == "4":
+                inventory_controller.delete_product()
 
-        choice = input("Enter choice: ")
+            elif choice == "5":
+                sales_controller.record_sale()
 
-        if choice == "1":
-            inventory_controller.add_product()
+            elif choice == "6":
+                sales_controller.view_sales()
 
-        elif choice == "2":
-            inventory_controller.view_products()
+            elif choice == "7":
+                purchase_controller.record_purchase()
 
-        elif choice == "3":
-            inventory_controller.update_product()
+            elif choice == "8":
+                purchase_controller.view_purchases()
 
-        elif choice == "4":
-            inventory_controller.delete_product()
+            # ✅ FIXED STOCK MOVEMENT DISPLAY
+            elif choice == "9":
 
-        elif choice == "5":
-            sales_controller.record_sale()
+                movements = stock_service.get_all_movements()
 
-        elif choice == "6":
-            sales_controller.view_sales()
+                print("\n===================================")
+                print("       STOCK MOVEMENT HISTORY")
+                print("===================================\n")
 
-        elif choice == "7":
-            purchase_controller.record_purchase()
+                for m in movements:
 
-        elif choice == "8":
-            purchase_controller.view_purchases()
+                    print(f"""
+Product ID        : {m.get('product_id')}
+Product Name      : {m.get('product_name')}
+Movement Type     : {m.get('movement_type')}
+Quantity Change   : {m.get('quantity_change')}
+Reference ID      : {m.get('reference_id')}
+Date              : {m.get('date')}
+----------------------------------------
+""")
 
-        elif choice == "9":
-            print("Stock movement viewer will be implemented later.")
+            elif choice == "10":
+                inventory_controller.low_stock_alerts()
 
-        elif choice == "10":
-            print("Low stock alerts will be implemented later.")
+            elif choice == "11":
+                inventory_controller.search_product()
 
-        elif choice == "11":
-            print("Search feature will be implemented later.")
+            elif choice == "12":
+                inventory_controller.expiry_alerts()
 
-        elif choice == "12":
-            print("Expiry alert system will be implemented later.")
+            elif choice == "13":
+                sales_controller.sales_analytics()
 
-        elif choice == "13":
-            print("Sales analytics coming in AI phase.")
+            elif choice == "14":
+                inventory_controller.inventory_analytics()
 
-        elif choice == "14":
-            print("Inventory analytics coming in AI phase.")
+            elif choice == "15":
+                inventory_controller.reorder_suggestions()
 
-        elif choice == "15":
-            print("Reorder suggestions coming in AI phase.")
+            elif choice == "16":
+                inventory_controller.category_analytics()
 
-        elif choice == "16":
-            print("Category analytics coming in AI phase.")
+            elif choice == "17":
+                sales = sales_service.get_sales()
+                export_utils.export_sales(sales)
 
-        elif choice == "17":
-            sales = sales_service.get_sales()
-            ExportUtils.export_sales(sales)
+            elif choice == "18":
+                products = inventory_service.get_all_products()
+                export_utils.export_inventory(products)
 
-        elif choice == "18":
-            products = inventory_service.get_products()
-            ExportUtils.export_inventory(products)
+            elif choice == "19":
+                backup_utils.backup_database()
 
-        elif choice == "19":
-            BackupUtils.backup_database()
+            elif choice == "20":
+                backup_utils.restore_database()
 
-        elif choice == "20":
-            BackupUtils.restore_database()
+            elif choice == "0":
+                print("Exiting system...")
+                break
 
-        elif choice == "0":
-            print("Exiting system...")
-            break
+            else:
+                print("Invalid choice.")
 
-        else:
-            print("Invalid option")
+        # ================= CASHIER MENU =================
+
+        elif user["role"] == "cashier":
+
+            print("\n===== CASHIER MENU =====")
+
+            print("1 View Products")
+            print("2 Record Sale")
+            print("3 View Sales")
+            print("4 Search Product")
+            print("0 Exit")
+
+            choice = input("Enter choice: ")
+
+            if choice == "1":
+                inventory_controller.view_products()
+
+            elif choice == "2":
+                sales_controller.record_sale()
+
+            elif choice == "3":
+                sales_controller.view_sales()
+
+            elif choice == "4":
+                inventory_controller.search_product()
+
+            elif choice == "0":
+                print("Exiting system...")
+                break
+
+            else:
+                print("Invalid choice.")
 
 
 if __name__ == "__main__":

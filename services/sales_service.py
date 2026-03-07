@@ -18,7 +18,7 @@ class SalesService:
 
         if not product:
             print("Product not found.")
-            return
+            return False
 
         product_name = product.get("product_name")
         price = product.get("price", 0)
@@ -27,13 +27,14 @@ class SalesService:
         # CHECK STOCK
         if stock < quantity:
             print("Not enough stock available.")
-            return
+            return False
 
         total_price = quantity * price
 
         # CURRENT DATE
         now = datetime.now()
 
+        sale_date = now.strftime("%Y-%m-%d %H:%M:%S")
         day_of_week = now.strftime("%A")
         month = now.month
 
@@ -51,9 +52,9 @@ class SalesService:
             "product_id": product_id,
             "product_name": product_name,
             "quantity": quantity,
-            "price": price,
+            "price_per_unit": price,
             "total_price": total_price,
-            "date": now,
+            "sale_date": sale_date,
             "day_of_week": day_of_week,
             "month": month,
             "season": season
@@ -68,5 +69,8 @@ class SalesService:
             {"$inc": {"stock_quantity": -quantity}}
         )
 
+        return True
+
     def get_sales(self):
+
         return list(self.sales.find({}, {"_id": 0}))

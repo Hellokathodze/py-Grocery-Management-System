@@ -2,4 +2,8 @@ Product ID,Product Name,Quantity,Price,Total Price,Date,Day,Month,Season
 102,Amul Milk,10,,720.0,,Friday,March,
 102,Amul Milk,28,72.0,2016.0,2026-03-06 16:09:52.517000,Friday,3,Summer
 101,Parle-G,2,20.0,40.0,,,,
-101,Parle-G Biscuit,2,20.0,40.0,2026-03-07 08:08:21.450000,Saturday,3,Summer
+101,Parle-G Biscuit,2,20.0,40.0,2026-03-07T08:08:21.450000,Saturday,3,Summer
+101,Parle-G Biscuit,2,20.0,40.0,2026-03-07T09:40:11.370000,Saturday,3,Summer
+101,Parle-G Biscuit,10,20.0,200.0,2026-03-07T11:17:10.910000,Saturday,3,Summer
+101,Parle-G Biscuit,10,,200.0,,Saturday,3,Summer
+101,Parle-G Biscuit,1,,20.0,,Saturday,3,Summer
