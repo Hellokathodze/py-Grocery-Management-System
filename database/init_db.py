@@ -3,12 +3,10 @@ class DatabaseInitializer:
     def __init__(self, db):
         self.db = db
 
-
     def initialize_collections(self):
 
         # PRODUCTS COLLECTION
         if "products" not in self.db.list_collection_names():
-
             self.db.create_collection(
                 "products",
                 validator={
@@ -42,7 +40,6 @@ class DatabaseInitializer:
                             "stock": {
                                 "bsonType": "int"
                             }
-
                         }
                     }
                 }
@@ -50,7 +47,6 @@ class DatabaseInitializer:
 
         # SALES COLLECTION
         if "sales" not in self.db.list_collection_names():
-
             self.db.create_collection(
                 "sales",
                 validator={
@@ -101,7 +97,6 @@ class DatabaseInitializer:
                             "season": {
                                 "bsonType": "string"
                             }
-
                         }
                     }
                 }
@@ -109,7 +104,6 @@ class DatabaseInitializer:
 
         # PURCHASES COLLECTION
         if "purchases" not in self.db.list_collection_names():
-
             self.db.create_collection(
                 "purchases",
                 validator={
@@ -143,7 +137,6 @@ class DatabaseInitializer:
                             "date": {
                                 "bsonType": "date"
                             }
-
                         }
                     }
                 }
@@ -151,7 +144,6 @@ class DatabaseInitializer:
 
         # STOCK MOVEMENTS COLLECTION
         if "stock_movements" not in self.db.list_collection_names():
-
             self.db.create_collection(
                 "stock_movements",
                 validator={
@@ -180,10 +172,13 @@ class DatabaseInitializer:
                             "date": {
                                 "bsonType": "date"
                             }
-
                         }
                     }
                 }
             )
+
+        # USERS COLLECTION (FOR LOGIN SYSTEM)
+        if "users" not in self.db.list_collection_names():
+            self.db.create_collection("users")
 
         print("Database initialized successfully!")

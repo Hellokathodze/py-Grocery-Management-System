@@ -5,24 +5,12 @@ class SalesController:
 
     def record_sale(self):
 
-        product_id = input("Product ID: ")
-        product_name = input("Product Name: ")
-        quantity = int(input("Quantity: "))
-        price = float(input("Price: "))
-
-        total_price = quantity * price
-
         sale = {
-            "product_id": product_id,
-            "product_name": product_name,
-            "quantity": quantity,
-            "price": price,
-            "total_price": total_price
+            "product_id": input("Product ID: "),
+            "quantity": int(input("Quantity: "))
         }
 
         self.sales_service.record_sale(sale)
-
-        print("Sale recorded.")
 
     def view_sales(self):
 
@@ -30,6 +18,3 @@ class SalesController:
 
         for s in sales:
             print(s)
-
-    def get_sales(self):
-        return self.sales_service.get_sales()

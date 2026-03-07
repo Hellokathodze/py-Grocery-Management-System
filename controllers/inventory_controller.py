@@ -5,22 +5,17 @@ class InventoryController:
 
     def add_product(self):
 
-        product_id = input("Product ID: ")
-        name = input("Product Name: ")
-        category = input("Category: ")
-        price = float(input("Price: "))
-        stock = int(input("Stock: "))
-
         product = {
-            "product_id": product_id,
-            "product_name": name,
-            "category": category,
-            "price": price,
-            "stock": stock
+            "product_id": input("Product ID: "),
+            "product_name": input("Product Name: "),
+            "category": input("Category: "),
+            "price": float(input("Price: ")),
+            "stock_quantity": int(input("Stock Quantity: "))
         }
 
         self.inventory_service.add_product(product)
-        print("Product added successfully!")
+
+        print("Product added successfully.")
 
     def view_products(self):
 
@@ -31,22 +26,43 @@ class InventoryController:
 
     def update_product(self):
 
-        product_id = input("Product ID to update: ")
-        price = float(input("New price: "))
-        stock = int(input("New stock: "))
+        product_id = input("Enter product ID: ")
 
-        self.inventory_service.update_product(product_id, {
-            "price": price,
-            "stock": stock
-        })
+        updated_data = {
+            "product_name": input("New Name: "),
+            "category": input("New Category: "),
+            "price": float(input("New Price: ")),
+            "stock_quantity": int(input("New Stock: "))
+        }
+
+        self.inventory_service.update_product(product_id, updated_data)
 
         print("Product updated.")
 
     def delete_product(self):
 
-        product_id = input("Product ID to delete: ")
+        product_id = input("Enter product ID: ")
+
         self.inventory_service.delete_product(product_id)
+
         print("Product deleted.")
 
-    def get_products(self):
-        return self.inventory_service.get_products()
+    def low_stock_alerts(self):
+
+        products = self.inventory_service.get_low_stock_products()
+
+        print("\nLow Stock Products:\n")
+
+        for p in products:
+            print(p)
+
+    def search_product(self):
+
+        keyword = input("Enter product name/id/category: ")
+
+        results = self.inventory_service.search_product(keyword)
+
+        print("\nSearch Results:\n")
+
+        for r in results:
+            print(r)

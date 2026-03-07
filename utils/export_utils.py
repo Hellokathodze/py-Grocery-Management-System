@@ -22,13 +22,14 @@ class ExportUtils:
             )
 
             for p in products:
+
                 writer.writerow(
                     [
-                        p["product_id"],
-                        p["product_name"],
-                        p["category"],
-                        p["price"],
-                        p["stock_quantity"],
+                        p.get("product_id", ""),
+                        p.get("product_name", ""),
+                        p.get("category", ""),
+                        p.get("price", ""),
+                        p.get("stock_quantity", "")
                     ]
                 )
 
@@ -53,18 +54,25 @@ class ExportUtils:
                     "Price",
                     "Total Price",
                     "Date",
+                    "Day",
+                    "Month",
+                    "Season"
                 ]
             )
 
             for s in sales:
+
                 writer.writerow(
                     [
-                        s["product_id"],
-                        s["product_name"],
-                        s["quantity"],
-                        s["price"],
-                        s["total_price"],
-                        s["date"],
+                        s.get("product_id", ""),
+                        s.get("product_name", ""),
+                        s.get("quantity", ""),
+                        s.get("price", ""),
+                        s.get("total_price", ""),
+                        s.get("date", ""),
+                        s.get("day_of_week", ""),
+                        s.get("month", ""),
+                        s.get("season", "")
                     ]
                 )
 

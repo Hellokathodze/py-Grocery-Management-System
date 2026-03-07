@@ -5,10 +5,12 @@ from services.inventory_service import InventoryService
 from services.sales_service import SalesService
 from services.purchase_service import PurchaseService
 from services.stock_movement_service import StockMovementService
+from services.auth_service import AuthService
 
 from controllers.inventory_controller import InventoryController
 from controllers.sales_controller import SalesController
 from controllers.purchase_controller import PurchaseController
+from controllers.auth_controller import AuthController
 
 from utils.export_utils import ExportUtils
 from utils.backup_utils import BackupUtils
@@ -16,43 +18,52 @@ from utils.backup_utils import BackupUtils
 
 def main():
 
-    print("===== Grocery Management System =====")
+    db_connection = DatabaseConnection()
+    db = db_connection.get_database()
 
-    # DATABASE CONNECTION
-    db = DatabaseConnection().get_database()
-
-    # INITIALIZE COLLECTIONS
     initializer = DatabaseInitializer(db)
     initializer.initialize_collections()
 
-    # SERVICES
+    print("Database initialized successfully!")
+
     inventory_service = InventoryService(db)
     sales_service = SalesService(db)
     purchase_service = PurchaseService(db)
     stock_service = StockMovementService(db)
+    auth_service = AuthService(db)
 
-    # CONTROLLERS
+    auth_service.create_default_users()
+
     inventory_controller = InventoryController(inventory_service)
     sales_controller = SalesController(sales_service)
     purchase_controller = PurchaseController(purchase_service)
+    auth_controller = AuthController(auth_service)
+
+    user = None
+
+    while user is None:
+        user = auth_controller.login()
+
+    role = user["role"]
+
+    print(f"\nWelcome {user['username']} ({role})")
 
     while True:
 
-        print("\n===== MENU =====")
+        print("\n===== GROCERY MANAGEMENT SYSTEM =====")
 
-        print("1  Add Product")
-        print("2  View Products")
-        print("3  Update Product")
-        print("4  Delete Product")
+        print("1 Add Product")
+        print("2 View Products")
+        print("3 Update Product")
+        print("4 Delete Product")
 
-        print("5  Record Sale")
-        print("6  View Sales")
+        print("5 Record Sale")
+        print("6 View Sales")
 
-        print("7  Record Purchase")
-        print("8  View Purchases")
+        print("7 Record Purchase")
+        print("8 View Purchases")
 
-        print("9  View Stock Movements")
-
+        print("9 View Stock Movements")
         print("10 Low Stock Alerts")
         print("11 Search Product")
         print("12 Expiry Alerts")
@@ -72,7 +83,6 @@ def main():
 
         choice = input("Enter choice: ")
 
-        # INVENTORY
         if choice == "1":
             inventory_controller.add_product()
 
@@ -85,57 +95,50 @@ def main():
         elif choice == "4":
             inventory_controller.delete_product()
 
-        # SALES
         elif choice == "5":
             sales_controller.record_sale()
 
         elif choice == "6":
             sales_controller.view_sales()
 
-        # PURCHASE
         elif choice == "7":
             purchase_controller.record_purchase()
 
         elif choice == "8":
             purchase_controller.view_purchases()
 
-        # STOCK MOVEMENT
         elif choice == "9":
-            inventory_controller.view_stock_movements()
+            print("Stock movement viewer will be implemented later.")
 
-        # ALERTS
         elif choice == "10":
-            inventory_controller.low_stock_alerts()
+            print("Low stock alerts will be implemented later.")
 
         elif choice == "11":
-            inventory_controller.search_product()
+            print("Search feature will be implemented later.")
 
         elif choice == "12":
-            inventory_controller.expiry_alerts()
+            print("Expiry alert system will be implemented later.")
 
-        # ANALYTICS
         elif choice == "13":
-            sales_controller.sales_analytics()
+            print("Sales analytics coming in AI phase.")
 
         elif choice == "14":
-            inventory_controller.inventory_analytics()
+            print("Inventory analytics coming in AI phase.")
 
         elif choice == "15":
-            inventory_controller.reorder_suggestions()
+            print("Reorder suggestions coming in AI phase.")
 
         elif choice == "16":
-            inventory_controller.category_analytics()
+            print("Category analytics coming in AI phase.")
 
-        # REPORTS
         elif choice == "17":
-            sales = sales_controller.get_sales()
+            sales = sales_service.get_sales()
             ExportUtils.export_sales(sales)
 
         elif choice == "18":
-            products = inventory_controller.get_products()
+            products = inventory_service.get_products()
             ExportUtils.export_inventory(products)
 
-        # BACKUP
         elif choice == "19":
             BackupUtils.backup_database()
 
@@ -143,11 +146,11 @@ def main():
             BackupUtils.restore_database()
 
         elif choice == "0":
-            print("Exiting system.")
+            print("Exiting system...")
             break
 
         else:
-            print("Invalid option.")
+            print("Invalid option")
 
 
 if __name__ == "__main__":

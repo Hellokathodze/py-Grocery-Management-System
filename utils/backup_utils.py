@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from database.db_connection import DatabaseConnection
 
 
@@ -7,6 +8,30 @@ class BackupUtils:
 
     BACKUP_FOLDER = "backups"
     BACKUP_FILE = "backups/backup.json"
+
+    @staticmethod
+    def serialize_data(data):
+        """
+        Convert datetime objects into strings so JSON can store them.
+        """
+        if isinstance(data, list):
+            return [BackupUtils.serialize_data(i) for i in data]
+
+        if isinstance(data, dict):
+
+            new_dict = {}
+
+            for key, value in data.items():
+
+                if isinstance(value, datetime):
+                    new_dict[key] = value.isoformat()
+
+                else:
+                    new_dict[key] = BackupUtils.serialize_data(value)
+
+            return new_dict
+
+        return data
 
     @staticmethod
     def backup_database():
@@ -22,7 +47,11 @@ class BackupUtils:
             "stock_movements": list(db.stock_movements.find({}, {"_id": 0}))
         }
 
+        # convert datetime → string
+        data = BackupUtils.serialize_data(data)
+
         with open(BackupUtils.BACKUP_FILE, "w", encoding="utf-8") as file:
+
             json.dump(data, file, indent=4)
 
         print(f"Database backup saved to {BackupUtils.BACKUP_FILE}")
@@ -31,13 +60,22 @@ class BackupUtils:
     def restore_database():
 
         if not os.path.exists(BackupUtils.BACKUP_FILE):
+
             print("No backup file found.")
             return
 
         db = DatabaseConnection().get_database()
 
-        with open(BackupUtils.BACKUP_FILE, "r", encoding="utf-8") as file:
-            data = json.load(file)
+        try:
+
+            with open(BackupUtils.BACKUP_FILE, "r", encoding="utf-8") as file:
+
+                data = json.load(file)
+
+        except json.JSONDecodeError:
+
+            print("Backup file is corrupted.")
+            return
 
         db.products.delete_many({})
         db.sales.delete_many({})
