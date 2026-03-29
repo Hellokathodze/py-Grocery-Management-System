@@ -10,3 +10,5 @@ class User:
             "password": self.password,
             "role": self.role
         }
+
+        // Commit test
