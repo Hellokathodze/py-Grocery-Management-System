@@ -13,4 +13,6 @@ logs/
 
 # OS files
 .DS_Store
-Thumbs.db
+
+# Todo list 
+todo.txt

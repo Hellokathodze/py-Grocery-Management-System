@@ -55,7 +55,7 @@ def main():
 
         if user["role"] == "admin":
 
-            print("\n===== GROCERY MANAGEMENT SYSTEM =====")
+            print("\n===== KAILASH SUPERMARKET =====")
 
             print("1 Add Product")
             print("2 View Products")
@@ -105,7 +105,7 @@ def main():
             elif choice == "8":
                 purchase_controller.view_purchases()
 
-            # ✅ FIXED STOCK MOVEMENT DISPLAY
+            #  FIXED STOCK MOVEMENT DISPLAY
             elif choice == "9":
 
                 movements = stock_service.get_all_movements()

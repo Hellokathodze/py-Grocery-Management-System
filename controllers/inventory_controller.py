@@ -4,8 +4,13 @@ class InventoryController:
         self.inventory_service = inventory_service
 
 
-    # ---------------- ADD PRODUCT ----------------
+    # ---------------- GUI SUPPORT METHOD ----------------
+    # Needed so GUI can directly fetch products
+    def get_all_products(self):
+        return self.inventory_service.get_all_products()
 
+
+    # ---------------- ADD PRODUCT ----------------
     def add_product(self):
 
         product = {
@@ -24,7 +29,6 @@ class InventoryController:
 
 
     # ---------------- VIEW PRODUCTS ----------------
-
     def view_products(self):
 
         products = self.inventory_service.get_all_products()
@@ -38,19 +42,18 @@ class InventoryController:
         for p in products:
 
             print(f"""
-Product ID       : {p.get('product_id')}
-Product Name     : {p.get('product_name')}
-Category         : {p.get('category')}
-Price            : {p.get('price')}
-Stock Quantity   : {p.get('stock_quantity')}
-Reorder Level    : {p.get('reorder_level')}
-Expiry Date      : {p.get('expiry_date')}
----------------------------------
+Product ID      : {p.get('product_id')}
+Product Name    : {p.get('product_name')}
+Category        : {p.get('category')}
+Price           : {p.get('price')}
+Stock Quantity  : {p.get('stock_quantity')}
+Reorder Level   : {p.get('reorder_level')}
+Expiry Date     : {p.get('expiry_date')}
+--------------------------------
 """)
 
 
     # ---------------- UPDATE PRODUCT ----------------
-
     def update_product(self):
 
         product_id = input("Enter Product ID: ")
@@ -67,7 +70,6 @@ Expiry Date      : {p.get('expiry_date')}
 
 
     # ---------------- DELETE PRODUCT ----------------
-
     def delete_product(self):
 
         product_id = input("Enter Product ID: ")
@@ -78,7 +80,6 @@ Expiry Date      : {p.get('expiry_date')}
 
 
     # ---------------- SEARCH PRODUCT ----------------
-
     def search_product(self):
 
         keyword = input("Enter product name/id/category: ")
@@ -94,17 +95,16 @@ Expiry Date      : {p.get('expiry_date')}
         for p in products:
 
             print(f"""
-Product ID       : {p.get('product_id')}
-Product Name     : {p.get('product_name')}
-Category         : {p.get('category')}
-Price            : {p.get('price')}
-Stock Quantity   : {p.get('stock_quantity')}
----------------------------------
+Product ID      : {p.get('product_id')}
+Product Name    : {p.get('product_name')}
+Category        : {p.get('category')}
+Price           : {p.get('price')}
+Stock Quantity  : {p.get('stock_quantity')}
+--------------------------------
 """)
 
 
     # ---------------- LOW STOCK ALERT ----------------
-
     def low_stock_alerts(self):
 
         products = self.inventory_service.get_low_stock_products()
@@ -118,16 +118,15 @@ Stock Quantity   : {p.get('stock_quantity')}
         for p in products:
 
             print(f"""
-Product ID     : {p.get('product_id')}
-Product Name   : {p.get('product_name')}
-Stock Quantity : {p.get('stock_quantity')}
-Reorder Level  : {p.get('reorder_level')}
----------------------------------
+Product ID      : {p.get('product_id')}
+Product Name    : {p.get('product_name')}
+Stock Quantity  : {p.get('stock_quantity')}
+Reorder Level   : {p.get('reorder_level')}
+--------------------------------
 """)
 
 
     # ---------------- EXPIRY ALERTS ----------------
-
     def expiry_alerts(self):
 
         products = self.inventory_service.get_all_products()
@@ -139,17 +138,15 @@ Reorder Level  : {p.get('reorder_level')}
             expiry = p.get("expiry_date")
 
             if expiry:
-
                 print(f"""
-Product ID   : {p.get('product_id')}
-Product Name : {p.get('product_name')}
-Expiry Date  : {expiry}
----------------------------------
+Product ID      : {p.get('product_id')}
+Product Name    : {p.get('product_name')}
+Expiry Date     : {expiry}
+--------------------------------
 """)
 
 
     # ---------------- INVENTORY ANALYTICS ----------------
-
     def inventory_analytics(self):
 
         products = self.inventory_service.get_all_products()
@@ -161,13 +158,11 @@ Expiry Date  : {expiry}
             total_stock += p.get("stock_quantity", 0)
 
         print("\n===== INVENTORY ANALYTICS =====")
-
         print("Total Products :", total_products)
-        print("Total Stock :", total_stock)
+        print("Total Stock    :", total_stock)
 
 
     # ---------------- REORDER SUGGESTIONS ----------------
-
     def reorder_suggestions(self):
 
         products = self.inventory_service.get_low_stock_products()
@@ -181,16 +176,15 @@ Expiry Date  : {expiry}
         for p in products:
 
             print(f"""
-Product ID     : {p.get('product_id')}
-Product Name   : {p.get('product_name')}
-Current Stock  : {p.get('stock_quantity')}
-Reorder Level  : {p.get('reorder_level')}
----------------------------------
+Product ID      : {p.get('product_id')}
+Product Name    : {p.get('product_name')}
+Current Stock   : {p.get('stock_quantity')}
+Reorder Level   : {p.get('reorder_level')}
+--------------------------------
 """)
 
 
     # ---------------- CATEGORY ANALYTICS ----------------
-
     def category_analytics(self):
 
         products = self.inventory_service.get_all_products()
@@ -206,7 +200,7 @@ Reorder Level  : {p.get('reorder_level')}
 
             category_count[category] += 1
 
-        print("\n===== CATEGORY ANALYTYTICS =====")
+        print("\n===== CATEGORY ANALYTICS =====")
 
         for cat, count in category_count.items():
             print(cat, ":", count)

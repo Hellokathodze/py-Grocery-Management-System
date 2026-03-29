@@ -9,3 +9,9 @@ class DatabaseConnection:
 
     def get_database(self):
         return self.db
+
+
+# Helper function for easy import
+def get_database():
+    connection = DatabaseConnection()
+    return connection.get_database()
