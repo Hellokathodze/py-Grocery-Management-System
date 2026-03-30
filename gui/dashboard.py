@@ -11,13 +11,14 @@ from gui.analytics_page import AnalyticsPage
 
 class DashboardWindow(QWidget):
 
-    def __init__(self, user, inventory_controller, sales_controller, purchase_controller):
+    def __init__(self, user, inventory_controller, sales_controller, purchase_controller, auth_controller):
         super().__init__()
 
         self.user = user
         self.inventory_controller = inventory_controller
         self.sales_controller = sales_controller
         self.purchase_controller = purchase_controller
+        self.auth_controller = auth_controller  # ✅ IMPORTANT
 
         self.setWindowTitle("Dashboard - Grocery System")
         self.setGeometry(200, 100, 1000, 600)
@@ -39,10 +40,8 @@ class DashboardWindow(QWidget):
         sidebar_layout = QVBoxLayout()
         sidebar_layout.setSpacing(15)
 
-        # 🔥 FIXED HEADER
         title = QLabel(f"👤 Welcome,\n{self.user['username']}")
         title.setObjectName("sidebarTitle")
-        title.setStyleSheet("background: transparent;")
 
         btn_inventory = QPushButton("📦 Inventory")
         btn_sales = QPushButton("💰 Sales")
@@ -50,6 +49,8 @@ class DashboardWindow(QWidget):
         btn_logout = QPushButton("🚪 Logout")
 
         self.menu_buttons = [btn_inventory, btn_sales, btn_analytics]
+
+        sidebar_layout.addWidget(title)
 
         for btn in self.menu_buttons:
             btn.setObjectName("menuBtn")
@@ -62,7 +63,7 @@ class DashboardWindow(QWidget):
 
         sidebar.setLayout(sidebar_layout)
 
-        # 🔥 CONTENT AREA
+        # 🔥 CONTENT
         content = QFrame()
         content.setObjectName("content")
 
@@ -81,22 +82,19 @@ class DashboardWindow(QWidget):
         content_layout.addWidget(self.stack)
         content.setLayout(content_layout)
 
-        # 🔥 BUTTON CONNECTIONS + ACTIVE STATE
+        # 🔥 BUTTONS
         btn_inventory.clicked.connect(lambda: self.switch_page(self.inventory_page, btn_inventory))
         btn_sales.clicked.connect(lambda: self.switch_page(self.sales_page, btn_sales))
         btn_analytics.clicked.connect(lambda: self.switch_page(self.analytics_page, btn_analytics))
         btn_logout.clicked.connect(self.logout)
 
-        # DEFAULT ACTIVE BUTTON
         self.set_active(btn_inventory)
 
-        # ADD TO MAIN
         main_layout.addWidget(sidebar, 1)
         main_layout.addWidget(content, 4)
 
         self.setLayout(main_layout)
 
-    # 🔥 PAGE SWITCH WITH ACTIVE HIGHLIGHT
     def switch_page(self, page, button):
         self.stack.setCurrentWidget(page)
         self.set_active(button)
@@ -111,9 +109,17 @@ class DashboardWindow(QWidget):
         active_btn.style().unpolish(active_btn)
         active_btn.style().polish(active_btn)
 
+    # 🔥 FIXED LOGOUT
     def logout(self):
         from gui.login_window import LoginWindow
-        self.login = LoginWindow()
+
+        self.login = LoginWindow(
+            self.auth_controller,
+            self.inventory_controller,
+            self.sales_controller,
+            self.purchase_controller
+        )
+
         self.login.show()
         self.close()
 
@@ -136,8 +142,6 @@ class DashboardWindow(QWidget):
             font-weight: bold;
             padding: 10px;
             margin-bottom: 15px;
-            background: transparent;
-            border: none;
         }
 
         #menuBtn {

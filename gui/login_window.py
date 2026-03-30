@@ -12,16 +12,17 @@ from PyQt6.QtCore import Qt
 
 class LoginWindow(QWidget):
 
-    def __init__(self):
+    def __init__(self, auth_controller, inventory_controller, sales_controller, purchase_controller):
         super().__init__()
 
         self.setWindowTitle("Grocery Management System")
         self.setGeometry(500, 200, 400, 350)
 
-        self.inventory_controller = None
-        self.sales_controller = None
-        self.purchase_controller = None
-        self.auth_controller = None
+        # ✅ Controllers injected properly
+        self.auth_controller = auth_controller
+        self.inventory_controller = inventory_controller
+        self.sales_controller = sales_controller
+        self.purchase_controller = purchase_controller
 
         self.setStyleSheet(self.get_styles())
 
@@ -32,7 +33,6 @@ class LoginWindow(QWidget):
         main_layout = QVBoxLayout()
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # 🔥 CARD FRAME
         card = QFrame()
         card.setObjectName("card")
 
@@ -40,24 +40,20 @@ class LoginWindow(QWidget):
         card_layout.setSpacing(15)
         card_layout.setContentsMargins(30, 30, 30, 30)
 
-        # Title
         title = QLabel("Login")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setObjectName("title")
         card_layout.addWidget(title)
 
-        # Username
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
         card_layout.addWidget(self.username_input)
 
-        # Password
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         card_layout.addWidget(self.password_input)
 
-        # Button
         login_button = QPushButton("Login")
         login_button.clicked.connect(self.handle_login)
         card_layout.addWidget(login_button)
@@ -87,7 +83,8 @@ class LoginWindow(QWidget):
                 user,
                 self.inventory_controller,
                 self.sales_controller,
-                self.purchase_controller
+                self.purchase_controller,
+                self.auth_controller
             )
             self.dashboard.show()
             self.close()

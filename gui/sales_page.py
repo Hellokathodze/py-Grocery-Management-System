@@ -14,13 +14,12 @@ class SalesPage(QWidget):
 
     def init_ui(self):
 
-        # 🔥 MAIN LAYOUT (FIXED)
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(40, 40, 40, 40)
         main_layout.setSpacing(20)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # 🔥 CARD (WIDER + CLEAN)
+        # CARD
         card = QFrame()
         card.setStyleSheet("""
             QFrame {
@@ -29,7 +28,7 @@ class SalesPage(QWidget):
                 padding: 30px;
             }
         """)
-        card.setMaximumWidth(500)   # 🔥 better size
+        card.setMaximumWidth(500)
 
         layout = QVBoxLayout()
         layout.setSpacing(15)
@@ -45,7 +44,7 @@ class SalesPage(QWidget):
         self.product_dropdown.setMinimumHeight(35)
         layout.addWidget(self.product_dropdown)
 
-        # QUANTITY INPUT
+        # QUANTITY
         self.quantity = QSpinBox()
         self.quantity.setMinimum(1)
         self.quantity.setMinimumHeight(35)
@@ -58,22 +57,31 @@ class SalesPage(QWidget):
         layout.addWidget(btn)
 
         card.setLayout(layout)
-
-        # ADD CARD TO MAIN LAYOUT
         main_layout.addWidget(card)
-
         self.setLayout(main_layout)
 
         self.load_products()
 
+    # ✅ FIXED: Fetch from SalesController → Service → DB
     def load_products(self):
-        products = self.sales_controller.inventory_controller.get_all_products()
+        self.product_dropdown.clear()
+
+        products = self.sales_controller.get_products()
+
         for p in products:
-            self.product_dropdown.addItem(p["product_id"])
+            display_text = f"{p['product_id']} - {p['product_name']}"
+            self.product_dropdown.addItem(display_text)
 
     def sell(self):
 
-        product_id = self.product_dropdown.currentText()
+        selected = self.product_dropdown.currentText()
+
+        if not selected:
+            QMessageBox.warning(self, "Error", "No product selected")
+            return
+
+        # ✅ Extract product_id
+        product_id = selected.split(" - ")[0]
         qty = self.quantity.value()
 
         success = self.sales_controller.record_sale(product_id, qty)
