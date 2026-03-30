@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox, QFrame
 from PyQt6.QtCore import Qt
-
+from utils.signal_bus import signal_bus
 
 class PurchasePage(QWidget):
 
@@ -54,4 +54,5 @@ class PurchasePage(QWidget):
     def add_purchase(self):
         product_id = self.product_id_input.currentText()
         self.purchase_controller.record_purchase(product_id, 5, 50)
+        signal_bus.inventory_updated.emit()
         QMessageBox.information(self, "Success", "Stock Added")

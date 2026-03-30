@@ -1,39 +1,66 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QFrame
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel,
+    QHBoxLayout, QFrame, QTableWidget,
+    QTableWidgetItem
+)
+from PyQt6.QtCore import Qt
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from datetime import datetime
 
 
 class AnalyticsPage(QWidget):
 
     def __init__(self, inventory_controller, sales_controller):
         super().__init__()
+
         self.inventory_controller = inventory_controller
         self.sales_controller = sales_controller
+
         self.init_ui()
 
     def init_ui(self):
 
         main_layout = QVBoxLayout()
+        main_layout.setSpacing(20)
 
-        title = QLabel("📊 Analytics")
-        title.setStyleSheet("font-size: 22px; font-weight: bold;")
+        # 🔥 TITLE
+        title = QLabel("📊 Admin Dashboard")
+        title.setStyleSheet("font-size: 24px; font-weight: bold;")
         main_layout.addWidget(title)
 
-        # 🔥 CARD CONTAINER
+        # ================= CARDS =================
         cards_layout = QHBoxLayout()
 
         self.products_card = self.create_card("Total Products")
-        self.stock_card = self.create_card("Total Stock")
         self.revenue_card = self.create_card("Total Revenue")
+        self.transactions_card = self.create_card("Transactions")
 
         cards_layout.addWidget(self.products_card)
-        cards_layout.addWidget(self.stock_card)
         cards_layout.addWidget(self.revenue_card)
+        cards_layout.addWidget(self.transactions_card)
 
         main_layout.addLayout(cards_layout)
+
+        # ================= CHART =================
+        self.canvas = FigureCanvas(plt.Figure())
+        main_layout.addWidget(self.canvas)
+
+        # ================= TABLE =================
+        self.table = QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(
+            ["Product", "Qty", "Total", "Date"]
+        )
+
+        main_layout.addWidget(self.table)
 
         self.setLayout(main_layout)
 
         self.load_data()
 
+    # ---------------- CARD ----------------
     def create_card(self, title):
 
         card = QFrame()
@@ -41,7 +68,7 @@ class AnalyticsPage(QWidget):
             QFrame {
                 background-color: #3b3b5c;
                 border-radius: 12px;
-                padding: 20px;
+                padding: 15px;
             }
         """)
 
@@ -61,15 +88,67 @@ class AnalyticsPage(QWidget):
 
         return card
 
+    # ---------------- LOAD DATA ----------------
     def load_data(self):
 
         products = self.inventory_controller.get_all_products()
-        sales = self.sales_controller.get_sales_analytics()
+        sales = self.sales_controller.get_sales()
 
-        self.products_card.value_label.setText(str(len(products)))
-        self.stock_card.value_label.setText(
-            str(sum(p.get("stock_quantity", 0) for p in products))
+        total_products = len(products)
+        total_revenue = sum(s.get("total_price", 0) for s in sales)
+        total_transactions = len(sales)
+
+        # 🔥 UPDATE CARDS
+        self.products_card.value_label.setText(str(total_products))
+        self.revenue_card.value_label.setText(f"₹{total_revenue}")
+        self.transactions_card.value_label.setText(str(total_transactions))
+
+        # 🔥 CHART
+        self.plot_donut_chart(total_revenue, total_transactions, sales)
+
+        # 🔥 TABLE
+        self.load_table(sales)
+
+    # ---------------- DONUT CHART ----------------
+    def plot_donut_chart(self, revenue, transactions, sales):
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        today_revenue = sum(
+            s.get("total_price", 0)
+            for s in sales
+            if today in s.get("sale_date", "")
         )
-        self.revenue_card.value_label.setText(
-            f"₹{sales.get('total_revenue', 0)}"
-        )
+
+        labels = ["Revenue", "Transactions", "Today"]
+        values = [revenue, transactions, today_revenue]
+
+        self.canvas.figure.clear()
+        ax = self.canvas.figure.add_subplot(111)
+
+        ax.pie(values, labels=labels, autopct='%1.1f%%')
+
+        # 🔥 donut effect
+        centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+        fig = self.canvas.figure
+        fig.gca().add_artist(centre_circle)
+
+        ax.set_title("Business Overview")
+
+        self.canvas.draw()
+
+    # ---------------- TABLE ----------------
+    def load_table(self, sales):
+
+        recent_sales = sales[-10:]  # last 10
+
+        self.table.setRowCount(len(recent_sales))
+
+        for row, s in enumerate(recent_sales):
+
+            self.table.setItem(row, 0, QTableWidgetItem(s.get("product_name")))
+            self.table.setItem(row, 1, QTableWidgetItem(str(s.get("quantity"))))
+            self.table.setItem(row, 2, QTableWidgetItem(str(s.get("total_price"))))
+            self.table.setItem(row, 3, QTableWidgetItem(s.get("sale_date")))
+
+        self.table.resizeColumnsToContents()

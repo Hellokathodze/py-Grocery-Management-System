@@ -18,7 +18,7 @@ class LoginWindow(QWidget):
         self.setWindowTitle("Grocery Management System")
         self.setGeometry(500, 200, 400, 350)
 
-        # ✅ Controllers injected properly
+        # Controllers
         self.auth_controller = auth_controller
         self.inventory_controller = inventory_controller
         self.sales_controller = sales_controller
@@ -54,15 +54,19 @@ class LoginWindow(QWidget):
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         card_layout.addWidget(self.password_input)
 
-        login_button = QPushButton("Login")
-        login_button.clicked.connect(self.handle_login)
-        card_layout.addWidget(login_button)
+        # 🔥 ENTER KEY LOGIN
+        self.password_input.returnPressed.connect(self.handle_login)
+
+        self.login_button = QPushButton("Login")
+        self.login_button.clicked.connect(self.handle_login)
+        card_layout.addWidget(self.login_button)
 
         card.setLayout(card_layout)
         main_layout.addWidget(card)
 
         self.setLayout(main_layout)
 
+    # ---------------- LOGIN LOGIC ----------------
     def handle_login(self):
 
         username = self.username_input.text().strip()
@@ -72,26 +76,44 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Error", "Please enter all fields.")
             return
 
-        user = self.auth_controller.login(username, password)
+        # 🔥 Disable button (prevent spam clicks)
+        self.login_button.setEnabled(False)
+        self.login_button.setText("Logging in...")
 
-        if user:
-            QMessageBox.information(self, "Success", "Login Successful!")
+        try:
+            user = self.auth_controller.login(username, password)
 
-            from gui.dashboard import DashboardWindow
+            if user:
 
-            self.dashboard = DashboardWindow(
-                user,
-                self.inventory_controller,
-                self.sales_controller,
-                self.purchase_controller,
-                self.auth_controller
-            )
-            self.dashboard.show()
-            self.close()
+                QMessageBox.information(self, "Success", "Login Successful!")
 
-        else:
-            QMessageBox.warning(self, "Error", "Invalid username or password.")
+                from gui.dashboard import DashboardWindow
 
+                # 🔥 ROLE BASED ACCESS
+                self.dashboard = DashboardWindow(
+                    user,
+                    self.inventory_controller,
+                    self.sales_controller,
+                    self.purchase_controller,
+                    self.auth_controller
+                )
+
+                self.dashboard.show()
+                self.close()
+
+            else:
+                QMessageBox.warning(self, "Error", "Invalid username or password.")
+
+        except Exception as e:
+            print("LOGIN ERROR:", e)
+            QMessageBox.critical(self, "Error", "Something went wrong!")
+
+        finally:
+            # Re-enable button
+            self.login_button.setEnabled(True)
+            self.login_button.setText("Login")
+
+    # ---------------- UI STYLES ----------------
     def get_styles(self):
         return """
         QWidget {

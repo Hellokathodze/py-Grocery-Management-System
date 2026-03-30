@@ -47,13 +47,13 @@ def main():
     # ---------------- GUI APP ----------------
     app = QApplication(sys.argv)
 
-    login_window = LoginWindow()
-
-    # 🔥 inject controllers into GUI (FIXED INDENTATION)
-    login_window.auth_controller = auth_controller
-    login_window.inventory_controller = inventory_controller
-    login_window.sales_controller = sales_controller
-    login_window.purchase_controller = purchase_controller
+    # 🔥 PASS CONTROLLERS DIRECTLY (FIXED)
+    login_window = LoginWindow(
+        auth_controller,
+        inventory_controller,
+        sales_controller,
+        purchase_controller
+    )
 
     login_window.show()
 
