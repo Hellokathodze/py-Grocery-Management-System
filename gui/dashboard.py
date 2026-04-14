@@ -312,20 +312,22 @@ class DashboardWindow(QWidget):
 
         /* ===== LOGOUT ===== */
         #logoutBtn {
-            background-color: transparent;
-            border: 1px solid #3B2020;
+            background-color: #DC2626;
+            border: none;
             border-radius: 10px;
             padding: 10px 14px;
             text-align: left;
             font-size: 13px;
-            color: #F87171;
-            font-weight: 500;
+            color: #FFFFFF;
+            font-weight: bold;
         }
 
         #logoutBtn:hover {
-            background-color: #2A1515;
-            border: 1px solid #7F1D1D;
-            color: #FCA5A5;
+            background-color: #EF4444;
+        }
+
+        #logoutBtn:pressed {
+            background-color: #B91C1C;
         }
 
         /* ===== CONTENT AREA ===== */

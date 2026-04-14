@@ -72,6 +72,7 @@ class SalesPage(QWidget):
 
         self.quantity = QSpinBox()
         self.quantity.setMinimum(1)
+        self.quantity.setMaximum(10000)
         self.quantity.setMinimumHeight(38)
         self.quantity.setStyleSheet(self.spinbox_style())
         row.addWidget(self.quantity, 1)

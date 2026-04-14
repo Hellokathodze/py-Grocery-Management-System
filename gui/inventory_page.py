@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QTableWidget,
-    QTableWidgetItem, QLineEdit, QFrame, QHeaderView
+    QTableWidgetItem, QLineEdit, QFrame, QHeaderView,
+    QSizePolicy, QAbstractItemView
 )
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
@@ -23,7 +24,7 @@ class InventoryPage(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
-        # 🔥 GLOBAL THEME
+        # GLOBAL THEME
         self.setStyleSheet("""
             QWidget {
                 background-color: #0F172A;
@@ -32,83 +33,82 @@ class InventoryPage(QWidget):
             }
         """)
 
-        # 🔥 CARD CONTAINER
+        # CARD — no padding in stylesheet, use layout margins only
         card = QFrame()
+        card.setObjectName("inventoryCard")
         card.setStyleSheet("""
-            QFrame {
+            QFrame#inventoryCard {
                 background-color: #1E293B;
                 border-radius: 12px;
-                padding: 20px;
             }
         """)
 
         layout = QVBoxLayout()
-        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(14)
 
-        # 🔥 TITLE
+        # TITLE
         title = QLabel("📦 Inventory Management")
-        title.setStyleSheet("font-size: 22px; font-weight: bold;")
+        title.setStyleSheet(
+            "font-size: 22px; font-weight: bold; color: #F1F5F9; "
+            "background: transparent; border: none;"
+        )
         layout.addWidget(title)
 
-        # 🔍 SEARCH
+        # SEARCH
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("🔍 Search product...")
+        self.search_input.setMinimumHeight(40)
         self.search_input.setStyleSheet("""
             QLineEdit {
-                background-color: #334155;
-                border-radius: 8px;
-                padding: 8px;
-                border: 1px solid #475569;
+                background-color: #0F172A;
+                border-radius: 10px;
+                padding: 8px 14px;
+                border: 1.5px solid #2A3A55;
                 color: white;
+                font-size: 13px;
+            }
+            QLineEdit:focus {
+                border: 1.5px solid #3B82F6;
+                background-color: #111E36;
+            }
+            QLineEdit:hover {
+                border: 1.5px solid #3B6ECF;
             }
         """)
         self.search_input.textChanged.connect(self.search_products)
         layout.addWidget(self.search_input)
 
-        # 📊 TABLE
+        # TABLE
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Name", "Price", "Stock", "Status"]
+            ["ID", "Product Name", "Price (₹)", "Stock Level", "Status"]
         )
 
-        # ✅ FIX HEADER (NO DISTORTION)
+        # Header setup
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        header.setMinimumHeight(42)
-        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        header.setStretchLastSection(True)
+        header.setMinimumHeight(40)
+        header.setDefaultAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
 
-        # ✅ FIX ROW HEIGHT
-        self.table.verticalHeader().setDefaultSectionSize(38)
+        # Row settings
+        self.table.verticalHeader().setDefaultSectionSize(40)
         self.table.verticalHeader().setVisible(False)
 
-        # ✅ CLEAN TABLE
+        # Table behavior
         self.table.setShowGrid(False)
         self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.table.setMinimumHeight(300)
 
-        self.table.setStyleSheet("""
-            QTableWidget {
-                background-color: #1E293B;
-                border-radius: 8px;
-            }
-
-            QHeaderView::section {
-                background-color: #334155;
-                color: #E2E8F0;
-                padding: 8px;
-                border: none;
-                font-weight: bold;
-            }
-
-            QTableWidget::item {
-                padding: 6px;
-            }
-
-            QTableWidget::item:selected {
-                background-color: #3B82F6;
-            }
-        """)
+        self.table.setStyleSheet(self.table_style())
 
         layout.addWidget(self.table)
 
@@ -144,13 +144,24 @@ class InventoryPage(QWidget):
         for row, p in enumerate(products):
 
             stock = p.get("stock_quantity", 0)
+            price = p.get("price", 0)
 
-            self.table.setItem(row, 0, QTableWidgetItem(p.get("product_id")))
-            self.table.setItem(row, 1, QTableWidgetItem(p.get("product_name")))
-            self.table.setItem(row, 2, QTableWidgetItem(str(p.get("price"))))
-            self.table.setItem(row, 3, QTableWidgetItem(str(stock)))
+            id_item = QTableWidgetItem(str(p.get("product_id", "")))
+            name_item = QTableWidgetItem(p.get("product_name", ""))
+            price_item = QTableWidgetItem(f"₹{price:,.2f}")
+            stock_item = QTableWidgetItem(str(stock))
 
-            # ✅ CLEAN STATUS (NO BLOCK BACKGROUND)
+            # Center align numeric columns
+            id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            self.table.setItem(row, 0, id_item)
+            self.table.setItem(row, 1, name_item)
+            self.table.setItem(row, 2, price_item)
+            self.table.setItem(row, 3, stock_item)
+
+            # Status with color
             if stock == 0:
                 status_text = "● Out of Stock"
                 color = "#EF4444"
@@ -163,5 +174,67 @@ class InventoryPage(QWidget):
 
             status_item = QTableWidgetItem(status_text)
             status_item.setForeground(QColor(color))
+            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
             self.table.setItem(row, 4, status_item)
+
+    # ---------------- STYLE ----------------
+    def table_style(self):
+        return """
+            QTableWidget {
+                background-color: #1E293B;
+                color: #E2E8F0;
+                border: 1px solid #2A3A55;
+                border-radius: 8px;
+                font-size: 13px;
+                gridline-color: transparent;
+            }
+
+            QHeaderView::section {
+                background-color: #273449;
+                color: #F1F5F9;
+                padding: 8px 12px;
+                border: none;
+                font-weight: bold;
+                font-size: 13px;
+                min-height: 22px;
+            }
+
+            QTableWidget::item {
+                padding: 6px 10px;
+                border-bottom: 1px solid #253045;
+            }
+
+            QTableWidget::item:selected {
+                background-color: #3B82F6;
+                color: #FFFFFF;
+            }
+
+            QTableWidget::item:alternate {
+                background-color: #1a2d44;
+            }
+
+            QScrollBar:vertical {
+                background-color: #1E293B;
+                width: 8px;
+                border-radius: 4px;
+            }
+
+            QScrollBar::handle:vertical {
+                background-color: #475569;
+                border-radius: 4px;
+                min-height: 30px;
+            }
+
+            QScrollBar::handle:vertical:hover {
+                background-color: #64748B;
+            }
+
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical,
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {
+                background: none;
+                border: none;
+            }
+        """
