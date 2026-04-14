@@ -1,6 +1,7 @@
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtGui import QFont
 
 from gui.login_window import LoginWindow
 
@@ -24,19 +25,22 @@ def main():
     try:
         app = QApplication(sys.argv)
 
-        # 🔥 STEP 1: DB CONNECTION
+        # Fix QFont::setPointSize warning
+        app.setFont(QFont("Segoe UI", 13))
+
+        # STEP 1: DB CONNECTION
         db = get_database()
 
-        # 🔥 STEP 2: SERVICES
+        # STEP 2: SERVICES
         auth_service = AuthService(db)
         inventory_service = InventoryService(db)
         sales_service = SalesService(db)
         purchase_service = PurchaseService(db)
 
-        # 🔥 STEP 3: INIT DEFAULT USERS
+        # STEP 3: INIT DEFAULT USERS
         auth_service.create_default_users()
 
-        # 🔥 STEP 4: CONTROLLERS
+        # STEP 4: CONTROLLERS
 
         # Inventory FIRST (dependency base)
         inventory_controller = InventoryController(inventory_service)
@@ -44,19 +48,19 @@ def main():
         # Auth
         auth_controller = AuthController(auth_service)
 
-        # ✅ FIXED: Inject inventory_controller
+        # Inject inventory_controller
         sales_controller = SalesController(
             sales_service,
             inventory_controller
         )
 
-        # Purchase (already correct)
+        # Purchase
         purchase_controller = PurchaseController(
             purchase_service,
             inventory_controller
         )
 
-        # 🔥 STEP 5: GUI
+        # STEP 5: GUI
         window = LoginWindow(
             auth_controller,
             inventory_controller,
