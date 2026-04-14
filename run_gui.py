@@ -38,17 +38,23 @@ def main():
 
         # 🔥 STEP 4: CONTROLLERS
 
-        # Inventory FIRST
+        # Inventory FIRST (dependency base)
         inventory_controller = InventoryController(inventory_service)
 
         # Auth
         auth_controller = AuthController(auth_service)
 
-        # ✅ FIXED HERE
-        sales_controller = SalesController(sales_service)
+        # ✅ FIXED: Inject inventory_controller
+        sales_controller = SalesController(
+            sales_service,
+            inventory_controller
+        )
 
-        # Purchase (keep as is if required)
-        purchase_controller = PurchaseController(purchase_service, inventory_controller)
+        # Purchase (already correct)
+        purchase_controller = PurchaseController(
+            purchase_service,
+            inventory_controller
+        )
 
         # 🔥 STEP 5: GUI
         window = LoginWindow(

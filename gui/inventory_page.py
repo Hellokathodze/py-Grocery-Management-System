@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QTableWidget,
-    QTableWidgetItem, QLineEdit, QFrame
+    QTableWidgetItem, QLineEdit, QFrame, QHeaderView
 )
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
@@ -13,7 +13,6 @@ class InventoryPage(QWidget):
         super().__init__()
         self.inventory_controller = inventory_controller
 
-        # 🔥 CONNECT SIGNAL FIRST (IMPORTANT)
         signal_bus.inventory_updated.connect(self.load_products)
 
         self.init_ui()
@@ -21,14 +20,23 @@ class InventoryPage(QWidget):
     def init_ui(self):
 
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
-        # 🔥 CARD
+        # 🔥 GLOBAL THEME
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #0F172A;
+                color: #E2E8F0;
+                font-size: 13px;
+            }
+        """)
+
+        # 🔥 CARD CONTAINER
         card = QFrame()
         card.setStyleSheet("""
             QFrame {
-                background-color: #2c2c54;
+                background-color: #1E293B;
                 border-radius: 12px;
                 padding: 20px;
             }
@@ -39,7 +47,7 @@ class InventoryPage(QWidget):
 
         # 🔥 TITLE
         title = QLabel("📦 Inventory Management")
-        title.setStyleSheet("font-size: 24px; font-weight: bold;")
+        title.setStyleSheet("font-size: 22px; font-weight: bold;")
         layout.addWidget(title)
 
         # 🔍 SEARCH
@@ -47,9 +55,11 @@ class InventoryPage(QWidget):
         self.search_input.setPlaceholderText("🔍 Search product...")
         self.search_input.setStyleSheet("""
             QLineEdit {
-                background-color: #3b3b5c;
+                background-color: #334155;
                 border-radius: 8px;
                 padding: 8px;
+                border: 1px solid #475569;
+                color: white;
             }
         """)
         self.search_input.textChanged.connect(self.search_products)
@@ -62,25 +72,43 @@ class InventoryPage(QWidget):
             ["ID", "Name", "Price", "Stock", "Status"]
         )
 
+        # ✅ FIX HEADER (NO DISTORTION)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setMinimumHeight(42)
+        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
+        # ✅ FIX ROW HEIGHT
+        self.table.verticalHeader().setDefaultSectionSize(38)
+        self.table.verticalHeader().setVisible(False)
+
+        # ✅ CLEAN TABLE
+        self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setMinimumHeight(300)
+
         self.table.setStyleSheet("""
             QTableWidget {
-                background-color: #252542;
-                gridline-color: #444;
+                background-color: #1E293B;
                 border-radius: 8px;
             }
 
             QHeaderView::section {
-                background-color: #3b3b5c;
-                padding: 5px;
+                background-color: #334155;
+                color: #E2E8F0;
+                padding: 8px;
                 border: none;
+                font-weight: bold;
             }
 
-            QTableWidget::item:hover {
-                background-color: #44446a;
+            QTableWidget::item {
+                padding: 6px;
+            }
+
+            QTableWidget::item:selected {
+                background-color: #3B82F6;
             }
         """)
-
-        self.table.setSortingEnabled(False)
 
         layout.addWidget(self.table)
 
@@ -89,22 +117,12 @@ class InventoryPage(QWidget):
 
         self.setLayout(main_layout)
 
-        # 🔥 INITIAL LOAD
         self.load_products()
 
     # ---------------- LOAD ----------------
     def load_products(self):
-        print("🔥 Inventory REFRESH CALLED")
-
-        # 🔥 FORCE COMPLETE REFRESH
-        self.table.setUpdatesEnabled(False)
-        self.table.clearContents()
         self.table.setRowCount(0)
-
         self.search_products()
-
-        self.table.setUpdatesEnabled(True)
-        self.table.viewport().update()
 
     # ---------------- SEARCH ----------------
     def search_products(self):
@@ -130,23 +148,20 @@ class InventoryPage(QWidget):
             self.table.setItem(row, 0, QTableWidgetItem(p.get("product_id")))
             self.table.setItem(row, 1, QTableWidgetItem(p.get("product_name")))
             self.table.setItem(row, 2, QTableWidgetItem(str(p.get("price"))))
+            self.table.setItem(row, 3, QTableWidgetItem(str(stock)))
 
-            stock_item = QTableWidgetItem(str(stock))
-
-            # 🔥 STATUS
+            # ✅ CLEAN STATUS (NO BLOCK BACKGROUND)
             if stock == 0:
-                color = "#ff4d4d"
-                status = "🔴 Out of Stock"
+                status_text = "● Out of Stock"
+                color = "#EF4444"
             elif stock <= 10:
-                color = "#ffd11a"
-                status = "🟡 Low Stock"
+                status_text = "● Low Stock"
+                color = "#F59E0B"
             else:
-                color = "#33cc33"
-                status = "🟢 In Stock"
+                status_text = "● In Stock"
+                color = "#22C55E"
 
-            stock_item.setBackground(QColor(color))
+            status_item = QTableWidgetItem(status_text)
+            status_item.setForeground(QColor(color))
 
-            self.table.setItem(row, 3, stock_item)
-            self.table.setItem(row, 4, QTableWidgetItem(status))
-
-        self.table.resizeColumnsToContents()
+            self.table.setItem(row, 4, status_item)
