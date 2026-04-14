@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class InventoryService:
@@ -10,7 +10,6 @@ class InventoryService:
     # ---------------- ADD PRODUCT ----------------
     def add_product(self, product_data):
 
-        # 🔥 VALIDATION
         required_fields = [
             "product_id", "product_name",
             "category", "price", "stock_quantity"
@@ -22,7 +21,6 @@ class InventoryService:
 
         product_data["created_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 🔥 PREVENT DUPLICATE PRODUCT
         existing = self.products.find_one({"product_id": product_data["product_id"]})
         if existing:
             return False
@@ -86,6 +84,63 @@ class InventoryService:
             },
             {"_id": 0}
         ))
+
+    # ---------------- EXPIRY: GET ALL WITH EXPIRY INFO ----------------
+    def get_products_with_expiry_status(self, warning_days=7):
+        """
+        Returns all products that have an expiry_date, with an
+        extra 'expiry_status' field: 'expired', 'expiring_soon', or 'ok'.
+        """
+
+        products = self.get_all_products()
+        today = datetime.now().date()
+        warning_threshold = today + timedelta(days=warning_days)
+
+        result = []
+
+        for p in products:
+            expiry_str = p.get("expiry_date", "")
+
+            if not expiry_str:
+                p["expiry_status"] = "no_date"
+                result.append(p)
+                continue
+
+            try:
+                expiry_date = datetime.strptime(str(expiry_str)[:10], "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                p["expiry_status"] = "no_date"
+                result.append(p)
+                continue
+
+            if expiry_date < today:
+                p["expiry_status"] = "expired"
+                p["days_remaining"] = (expiry_date - today).days
+            elif expiry_date <= warning_threshold:
+                p["expiry_status"] = "expiring_soon"
+                p["days_remaining"] = (expiry_date - today).days
+            else:
+                p["expiry_status"] = "ok"
+                p["days_remaining"] = (expiry_date - today).days
+
+            result.append(p)
+
+        return result
+
+    # ---------------- EXPIRY: ONLY EXPIRED ----------------
+    def get_expired_products(self):
+
+        products = self.get_products_with_expiry_status()
+        return [p for p in products if p.get("expiry_status") == "expired"]
+
+    # ---------------- EXPIRY: EXPIRING SOON ----------------
+    def get_expiring_soon_products(self, warning_days=7):
+
+        products = self.get_products_with_expiry_status(warning_days)
+        return [
+            p for p in products
+            if p.get("expiry_status") in ("expired", "expiring_soon")
+        ]
 
     # ---------------- INCREASE STOCK ----------------
     def increase_stock(self, product_id, quantity):

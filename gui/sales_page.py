@@ -7,6 +7,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from utils.signal_bus import signal_bus
+from datetime import datetime
+import os
+import subprocess
+import platform
 
 
 class SalesPage(QWidget):
@@ -19,6 +23,10 @@ class SalesPage(QWidget):
 
         self.cart = []
         self.products = []
+
+        # Create bills folder if it doesn't exist
+        self.bills_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bills")
+        os.makedirs(self.bills_folder, exist_ok=True)
 
         self.init_ui()
 
@@ -37,7 +45,7 @@ class SalesPage(QWidget):
             }
         """)
 
-        # CARD — NO padding in stylesheet, use layout margins instead
+        # CARD
         card = QFrame()
         card.setObjectName("billingCard")
         card.setStyleSheet("""
@@ -116,7 +124,6 @@ class SalesPage(QWidget):
             ["Product", "Qty", "Price (₹)", "Total (₹)"]
         )
 
-        # Header setup — prevent clipping
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         header.setStretchLastSection(True)
@@ -134,7 +141,6 @@ class SalesPage(QWidget):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        # Fixed height so it never overflows into other widgets
         self.table.setMinimumHeight(180)
         self.table.setMaximumHeight(300)
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -155,9 +161,9 @@ class SalesPage(QWidget):
         total_layout = QHBoxLayout()
         total_layout.setContentsMargins(14, 10, 14, 10)
 
-        total_text = QLabel("Grand Total:")
+        total_text = QLabel("Grand Total (incl. 18% GST):")
         total_text.setStyleSheet(
-            "font-size: 16px; color: #94A3B8; "
+            "font-size: 14px; color: #94A3B8; "
             "background-color: transparent; border: none;"
         )
 
@@ -184,6 +190,9 @@ class SalesPage(QWidget):
         main_layout.addWidget(card)
 
         self.setLayout(main_layout)
+
+        # Listen for inventory changes from ANY page
+        signal_bus.inventory_updated.connect(self.load_products)
 
         self.load_products()
 
@@ -333,7 +342,6 @@ class SalesPage(QWidget):
                 f"{p['product_id']} - {p['product_name']}"
             )
 
-        # Disconnect first to avoid duplicate connections on reload
         try:
             self.product_dropdown.currentIndexChanged.disconnect(self.update_stock)
         except TypeError:
@@ -427,7 +435,6 @@ class SalesPage(QWidget):
             price_item = QTableWidgetItem(f"₹{item['price']:,.2f}")
             total_item = QTableWidgetItem(f"₹{item['total']:,.2f}")
 
-            # Center align numeric columns
             qty_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             total_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -454,7 +461,7 @@ class SalesPage(QWidget):
             QMessageBox.warning(self, "Error", "Sale failed due to stock issue!")
             return
 
-        self.print_bill()
+        bill_path = self.generate_pdf_bill()
 
         self.cart.clear()
         self.table.setRowCount(0)
@@ -463,20 +470,223 @@ class SalesPage(QWidget):
         self.load_products()
         signal_bus.inventory_updated.emit()
 
-        QMessageBox.information(self, "Success", "Sale completed!")
+        if bill_path:
+            reply = QMessageBox.information(
+                self, "Sale Complete",
+                f"Sale completed!\n\nBill saved to:\n{bill_path}\n\nOpen the bill?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.open_file(bill_path)
+        else:
+            QMessageBox.information(self, "Success", "Sale completed!")
 
-    # ================= PRINT BILL =================
-    def print_bill(self):
+    # ================= PDF BILL GENERATION =================
+    def generate_pdf_bill(self):
 
-        print("\n========== BILL ==========")
+        try:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.units import mm
+            from reportlab.lib import colors
+            from reportlab.pdfgen import canvas
 
-        total = 0
+            now = datetime.now()
+            bill_number = now.strftime("BILL-%Y%m%d-%H%M%S")
+            bill_date = now.strftime("%d/%m/%Y  %I:%M %p")
+            filename = f"{bill_number}.pdf"
+            filepath = os.path.join(self.bills_folder, filename)
 
-        for item in self.cart:
-            line_total = item["total"]
-            print(f"  {item['name']:.<25} x{item['qty']}  ₹{line_total:,.2f}")
-            total += line_total
+            width, height = A4
+            c = canvas.Canvas(filepath, pagesize=A4)
 
-        print("-" * 35)
-        print(f"  GRAND TOTAL:             ₹{total:,.2f}")
-        print("=" * 35)
+            # ===== HEADER =====
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.rect(0, height - 100, width, 100, fill=True, stroke=False)
+
+            c.setFillColor(colors.white)
+            c.setFont("Helvetica-Bold", 22)
+            c.drawString(30, height - 45, "KailashGeneralStore")
+
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.HexColor("#94A3B8"))
+            c.drawString(30, height - 65, "Your trusted grocery partner")
+            c.drawString(30, height - 80, "GSTIN: 27ABCDE1234F1Z5")
+
+            c.setFillColor(colors.white)
+            c.setFont("Helvetica-Bold", 12)
+            c.drawRightString(width - 30, height - 40, "TAX INVOICE")
+
+            c.setFont("Helvetica", 10)
+            c.setFillColor(colors.HexColor("#94A3B8"))
+            c.drawRightString(width - 30, height - 58, f"#{bill_number}")
+            c.drawRightString(width - 30, height - 74, bill_date)
+
+            # ===== BILL INFO BAR =====
+            y = height - 130
+
+            c.setFillColor(colors.HexColor("#F1F5F9"))
+            c.rect(30, y - 5, width - 60, 25, fill=True, stroke=False)
+
+            c.setFillColor(colors.HexColor("#334155"))
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(40, y + 2, f"Bill No: {bill_number}")
+            c.drawString(250, y + 2, f"Date: {bill_date}")
+            c.drawRightString(width - 40, y + 2, f"Items: {len(self.cart)}")
+
+            # ===== TABLE HEADER =====
+            y -= 40
+
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.rect(30, y - 5, width - 60, 25, fill=True, stroke=False)
+
+            c.setFillColor(colors.white)
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(40, y + 2, "#")
+            c.drawString(65, y + 2, "Product")
+            c.drawRightString(310, y + 2, "Price")
+            c.drawRightString(370, y + 2, "Qty")
+            c.drawRightString(450, y + 2, "Taxable Amt")
+            c.drawRightString(width - 40, y + 2, "Total")
+
+            # ===== TABLE ROWS =====
+            y -= 10
+            subtotal = 0
+
+            c.setFont("Helvetica", 10)
+
+            for i, item in enumerate(self.cart):
+                y -= 25
+
+                if i % 2 == 0:
+                    c.setFillColor(colors.HexColor("#F8FAFC"))
+                    c.rect(30, y - 5, width - 60, 25, fill=True, stroke=False)
+
+                item_total = item["total"]
+                # Price is inclusive of GST, so taxable amount = total / 1.18
+                taxable_amount = round(item_total / 1.18, 2)
+
+                c.setFillColor(colors.HexColor("#1E293B"))
+                c.drawString(40, y + 2, str(i + 1))
+                c.drawString(65, y + 2, item["name"])
+                c.drawRightString(310, y + 2, f"Rs.{item['price']:,.2f}")
+                c.drawRightString(370, y + 2, str(item["qty"]))
+                c.drawRightString(450, y + 2, f"Rs.{taxable_amount:,.2f}")
+
+                c.setFont("Helvetica-Bold", 10)
+                c.drawRightString(width - 40, y + 2, f"Rs.{item_total:,.2f}")
+                c.setFont("Helvetica", 10)
+
+                subtotal += item_total
+
+            # ===== SEPARATOR =====
+            y -= 15
+            c.setStrokeColor(colors.HexColor("#CBD5E1"))
+            c.setLineWidth(1)
+            c.line(30, y, width - 30, y)
+
+            # ===== TAX CALCULATION =====
+            # Prices are MRP (inclusive of 18% GST)
+            # Taxable value = Total / 1.18
+            # GST = Total - Taxable value
+            # CGST = GST / 2 (9%)
+            # SGST = GST / 2 (9%)
+
+            taxable_total = round(subtotal / 1.18, 2)
+            total_gst = round(subtotal - taxable_total, 2)
+            cgst = round(total_gst / 2, 2)
+            sgst = round(total_gst / 2, 2)
+
+            # ===== SUBTOTAL / TAX / TOTAL SECTION =====
+            y -= 25
+
+            c.setFillColor(colors.HexColor("#64748B"))
+            c.setFont("Helvetica", 11)
+            c.drawString(280, y, "Taxable Amount:")
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.drawRightString(width - 40, y, f"Rs.{taxable_total:,.2f}")
+
+            y -= 22
+            c.setFillColor(colors.HexColor("#64748B"))
+            c.drawString(280, y, "CGST (9%):")
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.drawRightString(width - 40, y, f"Rs.{cgst:,.2f}")
+
+            y -= 22
+            c.setFillColor(colors.HexColor("#64748B"))
+            c.drawString(280, y, "SGST (9%):")
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.drawRightString(width - 40, y, f"Rs.{sgst:,.2f}")
+
+            y -= 10
+            c.setStrokeColor(colors.HexColor("#CBD5E1"))
+            c.setLineWidth(0.5)
+            c.line(280, y, width - 30, y)
+
+            y -= 22
+            c.setFillColor(colors.HexColor("#64748B"))
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(280, y, "Total GST (18%):")
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.drawRightString(width - 40, y, f"Rs.{total_gst:,.2f}")
+
+            # ===== GRAND TOTAL BOX =====
+            y -= 35
+            c.setFillColor(colors.HexColor("#1E293B"))
+            c.rect(260, y - 10, width - 290, 35, fill=True, stroke=False)
+
+            c.setFillColor(colors.white)
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(275, y + 2, "GRAND TOTAL")
+            c.drawRightString(width - 40, y + 2, f"Rs.{subtotal:,.2f}")
+
+            # ===== AMOUNT IN WORDS (optional nice touch) =====
+            y -= 30
+            c.setFillColor(colors.HexColor("#64748B"))
+            c.setFont("Helvetica-Oblique", 9)
+            c.drawString(30, y, f"Amount inclusive of GST @ 18%")
+
+            # ===== FOOTER =====
+            footer_y = 60
+
+            c.setStrokeColor(colors.HexColor("#E2E8F0"))
+            c.setLineWidth(0.5)
+            c.line(30, footer_y + 20, width - 30, footer_y + 20)
+
+            c.setFillColor(colors.HexColor("#94A3B8"))
+            c.setFont("Helvetica", 9)
+            c.drawCentredString(width / 2, footer_y, "Thank you for shopping with us!")
+            c.drawCentredString(width / 2, footer_y - 14,
+                                "KailashGeneralStore  |  GSTIN: 27ABCDE1234F1Z5  |  Contact: +91 9619781254")
+
+            c.save()
+
+            print(f"\n✅ Bill saved: {filepath}")
+            return filepath
+
+        except ImportError:
+            print("\n⚠️ reportlab not installed. Run: pip install reportlab")
+            QMessageBox.warning(
+                self, "Missing Library",
+                "PDF generation requires 'reportlab'.\n\n"
+                "Install it with:\n  pip install reportlab"
+            )
+            return None
+
+        except Exception as e:
+            print(f"\n❌ Bill generation error: {e}")
+            QMessageBox.warning(self, "Error", f"Bill generation failed:\n{e}")
+            return None
+
+    # ================= OPEN FILE =================
+    def open_file(self, filepath):
+
+        try:
+            system = platform.system()
+            if system == "Windows":
+                os.startfile(filepath)
+            elif system == "Darwin":
+                subprocess.Popen(["open", filepath])
+            else:
+                subprocess.Popen(["xdg-open", filepath])
+        except Exception as e:
+            print(f"Could not open file: {e}")

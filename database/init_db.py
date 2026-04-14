@@ -17,7 +17,7 @@ class DatabaseInitializer:
                             "product_name",
                             "category",
                             "price",
-                            "stock"
+                            "stock_quantity"
                         ],
                         "properties": {
 
@@ -37,8 +37,21 @@ class DatabaseInitializer:
                                 "bsonType": ["double", "int"]
                             },
 
-                            "stock": {
+                            "stock_quantity": {
                                 "bsonType": "int"
+                            },
+
+                            "reorder_level": {
+                                "bsonType": "int"
+                            },
+
+                            "expiry_date": {
+                                "bsonType": "string",
+                                "description": "Product expiry date in YYYY-MM-DD format"
+                            },
+
+                            "created_at": {
+                                "bsonType": "string"
                             }
                         }
                     }
@@ -56,9 +69,9 @@ class DatabaseInitializer:
                             "product_id",
                             "product_name",
                             "quantity",
-                            "price",
+                            "price_per_unit",
                             "total_price",
-                            "date"
+                            "sale_date"
                         ],
                         "properties": {
 
@@ -74,7 +87,7 @@ class DatabaseInitializer:
                                 "bsonType": "int"
                             },
 
-                            "price": {
+                            "price_per_unit": {
                                 "bsonType": ["double", "int"]
                             },
 
@@ -82,8 +95,8 @@ class DatabaseInitializer:
                                 "bsonType": ["double", "int"]
                             },
 
-                            "date": {
-                                "bsonType": "date"
+                            "sale_date": {
+                                "bsonType": "string"
                             },
 
                             "day_of_week": {
@@ -135,7 +148,7 @@ class DatabaseInitializer:
                             },
 
                             "date": {
-                                "bsonType": "date"
+                                "bsonType": "string"
                             }
                         }
                     }
@@ -170,7 +183,7 @@ class DatabaseInitializer:
                             },
 
                             "date": {
-                                "bsonType": "date"
+                                "bsonType": "string"
                             }
                         }
                     }

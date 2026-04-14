@@ -1,11 +1,13 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QLineEdit, QFrame, QHeaderView,
-    QSizePolicy, QAbstractItemView
+    QSizePolicy, QAbstractItemView, QHBoxLayout,
+    QScrollArea
 )
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtCore import Qt
 from utils.signal_bus import signal_bus
+from datetime import datetime
 
 
 class InventoryPage(QWidget):
@@ -22,7 +24,7 @@ class InventoryPage(QWidget):
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setSpacing(12)
 
         # GLOBAL THEME
         self.setStyleSheet("""
@@ -33,7 +35,33 @@ class InventoryPage(QWidget):
             }
         """)
 
-        # CARD — no padding in stylesheet, use layout margins only
+        # ================= EXPIRY ALERT BANNER =================
+        self.expiry_alert_frame = self.create_alert_banner(
+            object_name="expiryAlert",
+            bg_color="#451A1A",
+            border_color="#7F1D1D",
+            title_text="Expiry Alerts",
+            title_color="#FCA5A5",
+            badge_bg="#FCA5A5",
+            icon="⚠️",
+            scroll_handle_color="#7F1D1D"
+        )
+        main_layout.addWidget(self.expiry_alert_frame["frame"])
+
+        # ================= REORDER ALERT BANNER =================
+        self.reorder_alert_frame = self.create_alert_banner(
+            object_name="reorderAlert",
+            bg_color="#1A3045",
+            border_color="#1E4976",
+            title_text="Low Stock Alerts",
+            title_color="#93C5FD",
+            badge_bg="#3B82F6",
+            icon="📦",
+            scroll_handle_color="#1E4976"
+        )
+        main_layout.addWidget(self.reorder_alert_frame["frame"])
+
+        # ================= MAIN CARD =================
         card = QFrame()
         card.setObjectName("inventoryCard")
         card.setStyleSheet("""
@@ -79,14 +107,14 @@ class InventoryPage(QWidget):
         self.search_input.textChanged.connect(self.search_products)
         layout.addWidget(self.search_input)
 
-        # TABLE
+        # TABLE — 7 columns
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels(
-            ["ID", "Product Name", "Price (₹)", "Stock Level", "Status"]
+            ["ID", "Product Name", "Price (₹)", "Stock Level",
+             "Stock Status", "Expiry Date", "Expiry Status"]
         )
 
-        # Header setup
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         header.setStretchLastSection(True)
@@ -95,11 +123,9 @@ class InventoryPage(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
 
-        # Row settings
         self.table.verticalHeader().setDefaultSectionSize(40)
         self.table.verticalHeader().setVisible(False)
 
-        # Table behavior
         self.table.setShowGrid(False)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -119,24 +145,226 @@ class InventoryPage(QWidget):
 
         self.load_products()
 
-    # ---------------- LOAD ----------------
+    # ================= REUSABLE ALERT BANNER FACTORY =================
+    def create_alert_banner(self, object_name, bg_color, border_color,
+                            title_text, title_color, badge_bg, icon,
+                            scroll_handle_color):
+
+        frame = QFrame()
+        frame.setObjectName(object_name)
+        frame.setStyleSheet(f"""
+            QFrame#{object_name} {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 10px;
+            }}
+        """)
+
+        alert_layout = QVBoxLayout()
+        alert_layout.setContentsMargins(16, 12, 16, 12)
+        alert_layout.setSpacing(6)
+
+        # Title row
+        title_row = QHBoxLayout()
+
+        icon_label = QLabel(icon)
+        icon_label.setStyleSheet("font-size: 18px; background: transparent; border: none;")
+
+        title_label = QLabel(title_text)
+        title_label.setStyleSheet(
+            f"font-size: 15px; font-weight: bold; color: {title_color}; "
+            "background: transparent; border: none;"
+        )
+
+        title_row.addWidget(icon_label)
+        title_row.addWidget(title_label)
+        title_row.addStretch()
+
+        count_label = QLabel("")
+        count_label.setStyleSheet(
+            f"font-size: 11px; font-weight: bold; color: #1E293B; "
+            f"background-color: {badge_bg}; border-radius: 8px; "
+            "padding: 2px 8px;"
+        )
+        title_row.addWidget(count_label)
+
+        alert_layout.addLayout(title_row)
+
+        # Scrollable items area
+        items_container = QWidget()
+        items_container.setStyleSheet("background: transparent; border: none;")
+        items_layout = QVBoxLayout()
+        items_layout.setContentsMargins(0, 0, 0, 0)
+        items_layout.setSpacing(4)
+        items_container.setLayout(items_layout)
+
+        scroll = QScrollArea()
+        scroll.setObjectName(f"{object_name}Scroll")
+        scroll.setWidgetResizable(True)
+        scroll.setMaximumHeight(100)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(f"""
+            QScrollArea#{object_name}Scroll {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background-color: {bg_color};
+                width: 6px;
+                border-radius: 3px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {scroll_handle_color};
+                border-radius: 3px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical,
+            QScrollBar::sub-line:vertical,
+            QScrollBar::add-page:vertical,
+            QScrollBar::sub-page:vertical {{
+                background: none;
+                border: none;
+            }}
+        """)
+        scroll.setWidget(items_container)
+
+        alert_layout.addWidget(scroll)
+        frame.setLayout(alert_layout)
+
+        # Hidden by default
+        frame.hide()
+
+        return {
+            "frame": frame,
+            "count_label": count_label,
+            "items_layout": items_layout
+        }
+
+    # ================= LOAD =================
     def load_products(self):
         self.table.setRowCount(0)
         self.search_products()
 
-    # ---------------- SEARCH ----------------
+    # ================= SEARCH =================
     def search_products(self):
 
         keyword = self.search_input.text().strip()
 
         if keyword:
             products = self.inventory_controller.search_product(keyword)
+            all_with_expiry = self.inventory_controller.get_products_with_expiry_status()
+            expiry_map = {p.get("product_id"): p for p in all_with_expiry}
+
+            enriched = []
+            for p in products:
+                pid = p.get("product_id")
+                if pid in expiry_map:
+                    enriched.append(expiry_map[pid])
+                else:
+                    p["expiry_status"] = "no_date"
+                    p["days_remaining"] = None
+                    enriched.append(p)
+            products = enriched
         else:
-            products = self.inventory_controller.get_all_products()
+            products = self.inventory_controller.get_products_with_expiry_status()
 
         self.populate_table(products)
+        self.update_expiry_alerts(products)
+        self.update_reorder_alerts(products)
 
-    # ---------------- TABLE ----------------
+    # ================= EXPIRY ALERTS =================
+    def update_expiry_alerts(self, products):
+
+        items_layout = self.expiry_alert_frame["items_layout"]
+        count_label = self.expiry_alert_frame["count_label"]
+        frame = self.expiry_alert_frame["frame"]
+
+        # Clear old
+        while items_layout.count():
+            child = items_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        alert_products = [
+            p for p in products
+            if p.get("expiry_status") in ("expired", "expiring_soon")
+        ]
+
+        if not alert_products:
+            frame.hide()
+            return
+
+        frame.show()
+        count_label.setText(f"{len(alert_products)} alert(s)")
+
+        for p in alert_products:
+            name = p.get("product_name", "Unknown")
+            expiry_date = p.get("expiry_date", "N/A")
+            days = p.get("days_remaining", 0)
+            status = p.get("expiry_status", "")
+
+            if status == "expired":
+                msg = f"🔴  {name}  —  Expired on {expiry_date}  ({abs(days)} days ago)"
+                text_color = "#FCA5A5"
+            else:
+                msg = f"🟡  {name}  —  Expires on {expiry_date}  ({days} day(s) left)"
+                text_color = "#FDE68A"
+
+            label = QLabel(msg)
+            label.setStyleSheet(
+                f"font-size: 12px; color: {text_color}; "
+                "background: transparent; border: none; padding: 2px 0;"
+            )
+            items_layout.addWidget(label)
+
+    # ================= REORDER ALERTS =================
+    def update_reorder_alerts(self, products):
+
+        items_layout = self.reorder_alert_frame["items_layout"]
+        count_label = self.reorder_alert_frame["count_label"]
+        frame = self.reorder_alert_frame["frame"]
+
+        # Clear old
+        while items_layout.count():
+            child = items_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        low_stock_products = []
+        for p in products:
+            stock = p.get("stock_quantity", 0)
+            reorder = p.get("reorder_level", 0)
+
+            if reorder > 0 and stock <= reorder:
+                low_stock_products.append(p)
+
+        if not low_stock_products:
+            frame.hide()
+            return
+
+        frame.show()
+        count_label.setText(f"{len(low_stock_products)} alert(s)")
+
+        for p in low_stock_products:
+            name = p.get("product_name", "Unknown")
+            stock = p.get("stock_quantity", 0)
+            reorder = p.get("reorder_level", 0)
+
+            if stock == 0:
+                msg = f"🔴  {name}  —  Out of stock!  (Reorder level: {reorder})"
+                text_color = "#FCA5A5"
+            else:
+                msg = f"🟠  {name}  —  Stock: {stock}  (Reorder level: {reorder}, need {reorder - stock} more)"
+                text_color = "#FDBA74"
+
+            label = QLabel(msg)
+            label.setStyleSheet(
+                f"font-size: 12px; color: {text_color}; "
+                "background: transparent; border: none; padding: 2px 0;"
+            )
+            items_layout.addWidget(label)
+
+    # ================= TABLE =================
     def populate_table(self, products):
 
         self.table.setRowCount(len(products))
@@ -145,13 +373,16 @@ class InventoryPage(QWidget):
 
             stock = p.get("stock_quantity", 0)
             price = p.get("price", 0)
+            reorder = p.get("reorder_level", 0)
+            expiry_date = p.get("expiry_date", "")
+            expiry_status = p.get("expiry_status", "no_date")
+            days_remaining = p.get("days_remaining", None)
 
             id_item = QTableWidgetItem(str(p.get("product_id", "")))
             name_item = QTableWidgetItem(p.get("product_name", ""))
             price_item = QTableWidgetItem(f"₹{price:,.2f}")
             stock_item = QTableWidgetItem(str(stock))
 
-            # Center align numeric columns
             id_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             price_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -161,24 +392,62 @@ class InventoryPage(QWidget):
             self.table.setItem(row, 2, price_item)
             self.table.setItem(row, 3, stock_item)
 
-            # Status with color
+            # Stock status — now considers reorder level
             if stock == 0:
-                status_text = "● Out of Stock"
-                color = "#EF4444"
-            elif stock <= 10:
-                status_text = "● Low Stock"
-                color = "#F59E0B"
+                stock_text = "● Out of Stock"
+                stock_color = "#EF4444"
+            elif reorder > 0 and stock <= reorder:
+                stock_text = f"● Low ({stock}/{reorder})"
+                stock_color = "#F59E0B"
             else:
-                status_text = "● In Stock"
-                color = "#22C55E"
+                stock_text = "● In Stock"
+                stock_color = "#22C55E"
 
-            status_item = QTableWidgetItem(status_text)
-            status_item.setForeground(QColor(color))
-            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            stock_status_item = QTableWidgetItem(stock_text)
+            stock_status_item.setForeground(QColor(stock_color))
+            stock_status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 4, stock_status_item)
 
-            self.table.setItem(row, 4, status_item)
+            # Expiry date column
+            expiry_date_item = QTableWidgetItem(str(expiry_date) if expiry_date else "N/A")
+            expiry_date_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
-    # ---------------- STYLE ----------------
+            if expiry_status == "expired":
+                expiry_date_item.setForeground(QColor("#EF4444"))
+            elif expiry_status == "expiring_soon":
+                expiry_date_item.setForeground(QColor("#F59E0B"))
+            else:
+                expiry_date_item.setForeground(QColor("#94A3B8"))
+
+            self.table.setItem(row, 5, expiry_date_item)
+
+            # Expiry status column
+            if expiry_status == "expired":
+                expiry_text = f"🔴 Expired ({abs(days_remaining)}d ago)"
+                expiry_color = "#EF4444"
+            elif expiry_status == "expiring_soon":
+                expiry_text = f"🟡 {days_remaining}d left"
+                expiry_color = "#F59E0B"
+            elif expiry_status == "ok":
+                expiry_text = f"🟢 {days_remaining}d left"
+                expiry_color = "#22C55E"
+            else:
+                expiry_text = "—"
+                expiry_color = "#475569"
+
+            expiry_status_item = QTableWidgetItem(expiry_text)
+            expiry_status_item.setForeground(QColor(expiry_color))
+            expiry_status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 6, expiry_status_item)
+
+            # Highlight expired rows
+            if expiry_status == "expired":
+                for col in range(self.table.columnCount()):
+                    item = self.table.item(row, col)
+                    if item:
+                        item.setBackground(QColor("#2D1515"))
+
+    # ================= STYLE =================
     def table_style(self):
         return """
             QTableWidget {
@@ -193,15 +462,15 @@ class InventoryPage(QWidget):
             QHeaderView::section {
                 background-color: #273449;
                 color: #F1F5F9;
-                padding: 8px 12px;
+                padding: 8px 10px;
                 border: none;
                 font-weight: bold;
-                font-size: 13px;
+                font-size: 12px;
                 min-height: 22px;
             }
 
             QTableWidget::item {
-                padding: 6px 10px;
+                padding: 6px 8px;
                 border-bottom: 1px solid #253045;
             }
 
@@ -234,6 +503,30 @@ class InventoryPage(QWidget):
             QScrollBar::sub-line:vertical,
             QScrollBar::add-page:vertical,
             QScrollBar::sub-page:vertical {
+                background: none;
+                border: none;
+            }
+
+            QScrollBar:horizontal {
+                background-color: #1E293B;
+                height: 8px;
+                border-radius: 4px;
+            }
+
+            QScrollBar::handle:horizontal {
+                background-color: #475569;
+                border-radius: 4px;
+                min-width: 30px;
+            }
+
+            QScrollBar::handle:horizontal:hover {
+                background-color: #64748B;
+            }
+
+            QScrollBar::add-line:horizontal,
+            QScrollBar::sub-line:horizontal,
+            QScrollBar::add-page:horizontal,
+            QScrollBar::sub-page:horizontal {
                 background: none;
                 border: none;
             }

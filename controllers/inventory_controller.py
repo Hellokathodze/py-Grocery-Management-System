@@ -27,15 +27,17 @@ class InventoryController:
     def get_low_stock_products(self):
         return self.inventory_service.get_low_stock_products()
 
-    # ---------------- EXPIRY ALERTS ----------------
-    def get_expiry_products(self):
+    # ---------------- EXPIRY: ALL WITH STATUS ----------------
+    def get_products_with_expiry_status(self, warning_days=7):
+        return self.inventory_service.get_products_with_expiry_status(warning_days)
 
-        products = self.inventory_service.get_all_products()
+    # ---------------- EXPIRY: ONLY EXPIRED ----------------
+    def get_expired_products(self):
+        return self.inventory_service.get_expired_products()
 
-        return [
-            p for p in products
-            if p.get("expiry_date")
-        ]
+    # ---------------- EXPIRY: EXPIRING SOON ----------------
+    def get_expiring_soon_products(self, warning_days=7):
+        return self.inventory_service.get_expiring_soon_products(warning_days)
 
     # ---------------- INVENTORY ANALYTICS ----------------
     def get_inventory_analytics(self):
@@ -53,6 +55,3 @@ class InventoryController:
             category_count[category] = category_count.get(category, 0) + 1
 
         return category_count
-
-    # ❌ REMOVE THIS METHOD COMPLETELY
-    # Stock updates must be done in service layer
